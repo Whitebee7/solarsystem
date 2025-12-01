@@ -9,7 +9,7 @@
 [![Three.js](https://img.shields.io/badge/Three.js-r158-000000.svg?logo=three.js)](#)
 
 ## 데모 바로가기
-→ [https://github.com/Whitebee7/solarsystem/](https://github.com/Whitebee7/solarsystem/)
+→ [https://whitebee7.github.io/solarsystem/](https://whitebee7.github.io/solarsystem/)
 
 ## 텍스처 출처 (Textures Credits)
 
