@@ -1,6 +1,6 @@
 # Solar System Ultimate v4.4 — Real Sky Alignment
 
-![Solar System Logo](logo.svg)  
+![Solar System Logo](https://whitebee7.github.io/solarsystem/logo.svg)  
 **실제 천구좌표계와 정확히 정렬된 고품질 3D 태양계 시뮬레이터**  
 은하수 배경 + 주요 별자리 + 행성/소행성 궤도 + 실시간 천문 계산
 
