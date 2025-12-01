@@ -36,20 +36,10 @@
 | Stars (Milky Way) | 8k_stars_milky_way.jpg             | https://www.solarsystemscope.com/textures/download/8k_stars_milky_way.jpg          |
 | Ceres, Vesta 등   | 2k~8k 공식 맵 또는 fictional map   | 동일 도메인 내 파일 사용                                                            |
 
-**출처 명시 예시 (README나 페이지 하단에 넣으면 완벽)**
-> Textures by [Solar System Scope](https://www.solarsystemscope.com/textures/) / CC BY 4.0
-
 **8K 버전이 필요하면**  
 → `8k_earth_daymap.jpg`, `8k_stars_milky_way.jpg` 등 파일명만 8k_ 로 바꾸면 됩니다.  
 모바일 성능을 위해 현재 프로젝트는 2K~4K 위주로 사용 중.
 
-### 배포 시 텍스처 경로 수정 권장
-
-현재 코드의 `./textures/` → 아래와 같이 바꾸면 로컬 파일 없이 바로 GitHub Pages 등에서 동작합니다.
-
-```js
-const TEX_PATH = 'https://www.solarsystemscope.com/textures/download/';
-```
 
 ## 특징
 
@@ -67,8 +57,8 @@ const TEX_PATH = 'https://www.solarsystemscope.com/textures/download/';
 
 ```bash
 # 1. 저장소 클론 or index.html 단일 파일 다운로드
-git clone https://github.com/Whitebee7/solar-system-ultimate.git
-cd solar-system-ultimate
+git clone https://github.com/Whitebee7/solarsystem
+cd solarsystem
 
 # 2. 아무 웹서버로 열기 (로컬 파일 열기 가능하지만 CORS 때문에 권장하지 않음)
 # 예시:
