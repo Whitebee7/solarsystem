@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+     viewBox="0 0 1000 1000" style="enable-background:new 0 0 1000 1000;" xml:space="preserve">
+<style type="text/css">
+    .st0{fill:#00FFFF;}
+    .st1{fill:#FFFFFF;}
+    .st2{fill:#FFD700;}
+</style>
+<g>
+    <path class="st0" d="M500,100c220.9,0,400,179.1,400,400s-179.1,400-400,400S100,720.9,100,500S279.1,100,500,100z"/>
+    <circle class="st1" cx="500" cy="500" r="120"/>
+    <g>
+        <ellipse transform="matrix(0.866 -0.5 0.5 0.866 -207.1 350)" class="st2" cx="500" cy="500" rx="300" ry="80"/>
+        <ellipse transform="matrix(0.5 -0.866 0.866 0.5 -150 750)" class="st2" cx="500" cy="500" rx="300" ry="80"/>
+    </g>
+    <text transform="matrix(1 0 0 1 250 550)" fill="#FFFFFF" font-family="'Orbitron'" font-weight="bold" font-size="120">SOLAR</text>
+    <text transform="matrix(1 0 0 1 380 680)" fill="#00FFFF" font-family="'Orbitron'" font-size="80">SYSTEM</text>
+</g>
+</svg>
