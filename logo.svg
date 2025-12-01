@@ -1,78 +1,83 @@
-<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-    <defs>
-        <!-- 태양 그라데이션 -->
-        <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-            <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
-            <stop offset="40%" style="stop-color:#FFD700;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#ff8800;stop-opacity:1" />
-        </radialGradient>
-        
-        <!-- 네온 글로우 효과 -->
-        <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
-            <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-        </filter>
-        
-        <!-- 텍스트 폰트 설정 (웹 폰트 미로드 시 대비 sans-serif) -->
-        <style>
-            @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
-            .text-main { font-family: 'Orbitron', sans-serif; font-weight: 700; fill: #ffffff; text-anchor: middle; }
-            .text-sub { font-family: 'Orbitron', sans-serif; font-weight: 400; fill: #00ffff; text-anchor: middle; letter-spacing: 2px; }
-            .orbit { fill: none; stroke: #00ffff; stroke-width: 2; opacity: 0.6; }
-            .planet { fill: #ffffff; filter: url(#neonGlow); }
-            .hud-line { stroke: #00ffff; stroke-width: 1; opacity: 0.4; }
-        </style>
-    </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 250" width="800" height="250">
+  <defs>
+    <!-- 태양 그라데이션 -->
+    <radialGradient id="sunGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" stop-color="#fff" />
+      <stop offset="40%" stop-color="#FFD700" />
+      <stop offset="100%" stop-color="#ff8800" />
+    </radialGradient>
+    
+    <!-- 네온 글로우 필터 -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- 배경 그리드 패턴 -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#00ffff" stroke-width="0.5" opacity="0.1"/>
+    </pattern>
+  </defs>
 
-    <!-- 배경 (테스트용, 실제 앱에서는 투명으로 사용하려면 이 줄 삭제) -->
-    <!-- <rect width="100%" height="100%" fill="#050c18" rx="20"/> -->
+  <!-- 1. 배경 (GitHub 라이트모드에서도 잘 보이도록 어두운 배경 필수) -->
+  <rect width="100%" height="100%" fill="#050C18" rx="10" ry="10"/>
+  <rect width="100%" height="100%" fill="url(#grid)" rx="10" ry="10"/>
 
-    <!-- 그룹: 전체 회전이나 조정을 위해 -->
-    <g transform="translate(256, 230)">
-        
-        <!-- 1. 배경 HUD 요소 (조준점/나침반 느낌) -->
-        <circle cx="0" cy="0" r="180" fill="none" stroke="#00ffff" stroke-width="1" stroke-dasharray="4, 6" opacity="0.3" />
-        <line x1="-200" y1="0" x2="-160" y2="0" class="hud-line" />
-        <line x1="160" y1="0" x2="200" y2="0" class="hud-line" />
-        <line x1="0" y1="-200" x2="0" y2="-160" class="hud-line" />
-        <line x1="0" y1="160" x2="0" y2="200" class="hud-line" />
+  <!-- 2. 왼쪽 아이콘 영역 -->
+  <g transform="translate(140, 125)">
+    <!-- HUD 배경 원 -->
+    <circle r="90" fill="none" stroke="#00ffff" stroke-width="1" stroke-dasharray="5,5" opacity="0.2"/>
+    <line x1="-100" y1="0" x2="100" y2="0" stroke="#00ffff" stroke-width="1" opacity="0.3"/>
+    <line x1="0" y1="-100" x2="0" y2="100" stroke="#00ffff" stroke-width="1" opacity="0.3"/>
 
-        <!-- 2. 궤도 (타원형으로 입체감 표현) -->
-        <!-- 궤도 1 -->
-        <ellipse rx="60" ry="20" class="orbit" transform="rotate(-20)">
-            <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="20s" repeatCount="indefinite" />
-        </ellipse>
-        
-        <!-- 궤도 2 (메인) -->
-        <ellipse rx="120" ry="40" class="orbit" transform="rotate(10)" stroke-opacity="0.8" />
-        <!-- 행성 (궤도 2 위) -->
-        <circle cx="110" cy="15" r="6" class="planet" transform="rotate(10)">
-             <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="12s" repeatCount="indefinite" />
-        </circle>
-
-        <!-- 궤도 3 -->
-        <ellipse rx="160" ry="55" class="orbit" transform="rotate(-45)" opacity="0.4" />
-        <!-- 행성 (궤도 3 위) -->
-         <circle cx="-140" cy="20" r="4" fill="#FF4422" transform="rotate(-45)" />
-
-        <!-- 3. 중심 태양 -->
-        <circle cx="0" cy="0" r="24" fill="url(#sunGrad)" filter="url(#neonGlow)">
-            <animate attributeName="r" values="24;26;24" dur="3s" repeatCount="indefinite" />
-        </circle>
-        
-        <!-- 4. 별자리 연결선 느낌 (장식) -->
-        <path d="M-80 -80 L-60 -100 L-30 -90" fill="none" stroke="#FFD700" stroke-width="1" opacity="0.6"/>
-        <circle cx="-80" cy="-80" r="2" fill="#FFD700" opacity="0.8"/>
-        <circle cx="-60" cy="-100" r="2" fill="#FFD700" opacity="0.8"/>
-        <circle cx="-30" cy="-90" r="2" fill="#FFD700" opacity="0.8"/>
+    <!-- 궤도 애니메이션 그룹 -->
+    <!-- 궤도 1 -->
+    <g>
+      <ellipse rx="70" ry="20" fill="none" stroke="#00ffff" stroke-width="2" opacity="0.5" transform="rotate(-20)">
+         <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="20s" repeatCount="indefinite" additive="sum"/>
+      </ellipse>
+    </g>
+    
+    <!-- 궤도 2 (메인) -->
+    <g>
+      <ellipse rx="50" ry="80" fill="none" stroke="#00ffff" stroke-width="2" opacity="0.7" transform="rotate(60)">
+      </ellipse>
+      <!-- 행성 점 -->
+      <circle r="6" fill="#fff" filter="url(#glow)">
+        <animateMotion dur="6s" repeatCount="indefinite" path="M0,0 M43.3,-25 A50,80 60 1 1 -43.3,25 A50,80 60 1 1 43.3,-25" />
+      </circle>
     </g>
 
-    <!-- 5. 텍스트 -->
-    <g transform="translate(0, 440)">
-        <text x="256" y="0" class="text-main" font-size="52" filter="url(#neonGlow)">SOLAR SYSTEM</text>
-        <text x="256" y="35" class="text-sub" font-size="20">ULTIMATE v4.4</text>
+    <!-- 중심 태양 -->
+    <circle r="18" fill="url(#sunGradient)" filter="url(#glow)">
+      <animate attributeName="r" values="18;20;18" dur="3s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- 3. 오른쪽 텍스트 영역 -->
+  <g transform="translate(260, 110)">
+    <!-- 메인 타이틀 -->
+    <text x="0" y="20" font-family="sans-serif" font-size="54" font-weight="900" fill="#ffffff" letter-spacing="-1">
+      SOLAR
+    </text>
+    <text x="200" y="20" font-family="sans-serif" font-size="54" font-weight="900" fill="#00ffff" filter="url(#glow)" letter-spacing="-1">
+      SYSTEM
+    </text>
+    
+    <!-- 서브 타이틀 & 버전 -->
+    <text x="5" y="65" font-family="monospace" font-size="22" fill="#aaaaaa" letter-spacing="4">
+      ULTIMATE <tspan fill="#FFD700" font-weight="bold">v4.4</tspan>
+    </text>
+    
+    <!-- 기능 설명 (Real Sky Alignment) -->
+    <g transform="translate(5, 95)">
+       <rect x="0" y="-12" width="180" height="20" rx="4" fill="#00ffff" opacity="0.15"/>
+       <text x="10" y="2" font-family="sans-serif" font-size="12" fill="#00ffff" font-weight="bold" letter-spacing="1">
+         REAL SKY ALIGNMENT
+       </text>
     </g>
+  </g>
 </svg>
