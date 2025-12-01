@@ -9,7 +9,7 @@
 [![Three.js](https://img.shields.io/badge/Three.js-r158-000000.svg?logo=three.js)](#)
 
 ## 데모 바로가기
-→ [https://whitebee-dev.github.io/solar-system-ultimate/](https://whitebee-dev.github.io/solar-system-ultimate/)
+→ [https://github.com/Whitebee7/solarsystem/](https://github.com/Whitebee7/solarsystem/)
 
 ## 텍스처 출처 (Textures Credits)
 
@@ -67,7 +67,7 @@ const TEX_PATH = 'https://www.solarsystemscope.com/textures/download/';
 
 ```bash
 # 1. 저장소 클론 or index.html 단일 파일 다운로드
-git clone https://github.com/whitebee-dev/solar-system-ultimate.git
+git clone https://github.com/Whitebee7/solar-system-ultimate.git
 cd solar-system-ultimate
 
 # 2. 아무 웹서버로 열기 (로컬 파일 열기 가능하지만 CORS 때문에 권장하지 않음)
