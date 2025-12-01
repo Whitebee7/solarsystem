@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="author" content="whitebee">
+    <title>Solar System Ultimate v4.4 — Real Sky Alignment</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Serif+KR:wght@400;700&display=swap');
+
+        /* === 기본 스타일 === */
+        body { margin: 0; overflow: hidden; background-color: #000; color: #fff; font-family: 'Orbitron', sans-serif; user-select: none; touch-action: none; }
+        #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+        
+        /* UI 패널 공통 */
+        .panel {
+            position: fixed; background: rgba(5, 12, 24, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(100, 200, 255, 0.2);
+            border-radius: 12px; padding: 15px; z-index: 100;
+            box-shadow: 0 0 25px rgba(0, 150, 255, 0.15);
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s;
+        }
+
+        /* 헤더 */
+        #header-panel {
+            top: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 20px;
+            padding: 10px 30px; border-top: 3px solid #00ffff;
+        }
+        #target-info { text-align: center; min-width: 140px; }
+        #target-name { font-size: 1.8em; font-weight: bold; color: #00ffff; text-shadow: 0 0 15px rgba(0,255,255,0.8); margin: 0; line-height: 1; }
+        #target-type { font-size: 0.7em; color: #aaa; letter-spacing: 2px; margin-top: 5px; display: block; }
+        .nav-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid #555; color: #fff;
+            width: 44px; height: 44px; border-radius: 50%; font-size: 1.2em; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
+        }
+        .nav-btn:active { background: #00ffff; color: #000; box-shadow: 0 0 15px #00ffff; }
+
+        /* 정보 패널 */
+        #info-panel {
+            top: 100px; left: 20px; width: 220px;
+            font-family: 'Noto Serif KR', sans-serif;
+            border-left: 3px solid #00ffff;
+        }
+        #sim-date { font-size: 0.9em; color: #ccc; margin-bottom: 2px; }
+        #sim-time { font-family: 'Orbitron'; font-size: 1.3em; color: #fff; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 5px; font-weight:bold; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 6px; }
+        .stat-label { color: #888; font-weight: bold;}
+        .stat-val { color: #00ffff; text-align: right; font-family: 'Orbitron'; }
+
+        /* 컨트롤 패널 & 토글 버튼 */
+        #controls-panel {
+            bottom: 80px; 
+            right: 20px; width: 300px;
+            max-height: 60vh; overflow-y: auto;
+            transform-origin: bottom right;
+        }
+        #controls-panel.hidden {
+            transform: scale(0.8) translateY(20px);
+            opacity: 0; pointer-events: none;
+        }
+
+        #btn-settings-toggle {
+            position: fixed; bottom: 20px; right: 20px;
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(0, 255, 255, 0.2); border: 2px solid #00ffff;
+            color: #00ffff; font-size: 24px; cursor: pointer; z-index: 101;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            transition: 0.3s;
+        }
+        #btn-settings-toggle:hover, #btn-settings-toggle.active {
+            background: #00ffff; color: #000; box-shadow: 0 0 25px #00ffff;
+        }
+
+        .control-group { margin-bottom: 15px; }
+        .group-title { font-size: 0.75em; color: #888; margin-bottom: 8px; display: block; border-bottom: 1px solid #333; padding-bottom: 2px;}
+        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        
+        .speed-control { display: flex; gap: 10px; align-items: center; }
+        input[type="range"] { flex:1; accent-color: #00ffff; height: 5px; cursor: pointer; }
+        input[type="number"] { width: 80px; background:#111; border:1px solid #444; color:#00ffff; padding:4px; border-radius:4px; text-align:right; font-family: 'Orbitron';}
+        input[type="checkbox"] { width: 18px; height: 18px; accent-color: #00ffff; cursor:pointer;}
+        input[type="datetime-local"] { background:#222; border:1px solid #444; color:#fff; padding:8px; border-radius:4px; font-size:0.8em; width: 100%; box-sizing: border-box; font-family: 'Orbitron'; }
+        
+        button.action-btn {
+            width: 100%; padding: 12px; background: linear-gradient(45deg, #222, #333); border: 1px solid #444; color: #00ffff;
+            font-family: 'Orbitron'; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 5px; transition: 0.3s;
+        }
+        button.action-btn:hover { background: #00ffff; color: #000; box-shadow: 0 0 15px #00ffff; }
+
+        /* 툴팁 */
+        #constellation-tooltip {
+            position: fixed; display: none; 
+            background: rgba(0, 10, 30, 0.95); border: 1px solid #ffd700;
+            color: #fff; padding: 15px; border-radius: 8px;
+            font-family: 'Noto Serif KR'; pointer-events: none; z-index: 9999;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3); text-align: center;
+            transform: translate(-50%, -100%); margin-top: -15px;
+            min-width: 200px; max-width: 300px; word-break: keep-all;
+        }
+        #const-name { font-size: 1.3em; color: #ffd700; font-weight: bold; margin-bottom: 5px; display:block;}
+        #const-desc { font-size: 0.9em; color: #ddd; line-height: 1.4; }
+
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: #00ffff;
+            transition: opacity 0.8s ease-out;
+        }
+        
+        .label-obj { 
+            font-size: 12px; color: rgba(255,255,255,0.7); 
+            text-shadow: 0 0 4px #000; pointer-events: none; margin-top: 10px; font-family: 'Roboto'; 
+        }
+        
+        .label-const {
+            font-size: 11px; color: rgba(255, 215, 0, 0.8);
+            font-family: 'Noto Serif KR', sans-serif; 
+            border: 1px solid rgba(255,215,0,0.3);
+            padding: 2px 8px; border-radius: 12px; background: rgba(0,0,0,0.5);
+            cursor: pointer; pointer-events: auto; transition: 0.2s;
+            white-space: nowrap;
+        }
+        .label-const:hover { color: #fff; background: rgba(255,215,0,0.6); border-color: #ffd700; z-index:10; }
+        
+        .label-polaris {
+            font-size: 11px; color: #aaccff; 
+            font-family: 'Noto Serif KR';
+            text-shadow: 0 0 5px #00ffff;
+            pointer-events: none; white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            #header-panel { top: 10px; padding: 8px 15px; width: 90%; justify-content: space-between; }
+            #target-name { font-size: 1.4em; }
+            #info-panel { top: auto; bottom: 80px; left: 20px; width: calc(50% - 30px); font-size: 0.8em; }
+            
+            #controls-panel { 
+                bottom: 80px; 
+                right: auto; left: 50%;
+                width: 90%; max-width: 360px;
+                max-height: 50vh; 
+                transform: translateX(-50%); 
+                transform-origin: bottom center;
+            }
+            #controls-panel.hidden {
+                transform: translateX(-50%) scale(0.8) translateY(20px);
+            }
+
+            .label-const { font-size: 10px; padding: 1px 6px; }
+        }
+        @media (max-width: 480px) {
+            #info-panel { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="loader">
+    <h2>SYSTEM INITIALIZING...</h2>
+    <p>Calibrating Sky & Orbits</p>
+</div>
+
+<div id="canvas-container"></div>
+<div id="constellation-tooltip">
+    <span id="const-name"></span>
+    <span id="const-desc"></span>
+</div>
+
+<div id="header-panel" class="panel">
+    <button class="nav-btn" id="btn-prev">&lt;</button>
+    <div id="target-info">
+        <div id="target-name">EARTH</div>
+        <span id="target-type">PLANET</span>
+    </div>
+    <button class="nav-btn" id="btn-next">&gt;</button>
+</div>
+
+<div id="info-panel" class="panel">
+    <div id="sim-date">YYYY-MM-DD</div>
+    <div id="sim-time">00:00:00</div>
+    <div class="stat-row"><span class="stat-label">RADIUS</span><span class="stat-val" id="spec-radius">-</span></div>
+    <div class="stat-row"><span class="stat-label">ROTATION</span><span class="stat-val" id="spec-day">-</span></div>
+    <div class="stat-row"><span class="stat-label">ORBIT</span><span class="stat-val" id="spec-year">-</span></div>
+    <div class="stat-row"><span class="stat-label">DIST (AU)</span><span class="stat-val" id="spec-dist">-</span></div>
+</div>
+
+<button id="btn-settings-toggle">⚙️</button>
+
+<div id="controls-panel" class="panel">
+    <div class="control-group">
+        <span class="group-title">VIEW OPTIONS</span>
+        <div class="row">
+            <span style="color:#ff5555; font-weight:bold;">Lock Camera</span>
+            <input type="checkbox" id="chk-lock"> 
+        </div>
+        <div class="row"><span>Planet Orbits</span><input type="checkbox" id="chk-orbits" checked></div>
+        <div class="row"><span>Asteroid Orbits</span><input type="checkbox" id="chk-ast-orbits"></div>
+        <div class="row"><span style="color:#ffd700;">Constellation Labels</span><input type="checkbox" id="chk-const" checked></div>
+    </div>
+    
+    <!-- [New] 배경 정렬 (좌우/상하) -->
+    <div class="control-group">
+        <span class="group-title" style="color:#aaccff;">SKY CALIBRATION (Align Milky Way)</span>
+        <div class="row">
+            <span>Rotation Y (좌우)</span>
+            <input type="range" id="sky-slider-y" min="0" max="360" step="1" value="0">
+        </div>
+        <div class="row">
+            <span>Rotation X (상하)</span>
+            <!-- 은하계 기울기가 약 60도이므로 기본값을 60 근처로 설정하면 얼추 맞습니다 -->
+            <input type="range" id="sky-slider-x" min="0" max="360" step="1" value="60"> 
+        </div>
+        <div style="font-size:0.7em; color:#666; margin-top:4px; line-height:1.4;">
+            * Tip 1: <strong>Y축</strong>을 돌려 밝은 은하수 띠를 <strong>궁수자리</strong> 뒤로 보냅니다.<br>
+            * Tip 2: <strong>X축</strong>을 돌려 은하수 흐름이 별자리와 겹치게 기울이세요.
+        </div>
+    </div>
+
+    <div class="control-group">
+        <span class="group-title">SPEED CONTROL (x multiplier)</span>
+        <div class="speed-control">
+            <input type="range" id="speed-slider" min="0" max="500000" step="1000" value="1">
+            <input type="number" id="speed-input" value="1">
+        </div>
+    </div>
+
+    <div class="control-group">
+        <span class="group-title">TIME TRAVEL</span>
+        <input type="datetime-local" id="date-picker">
+        <button class="action-btn" id="btn-reset">RESET TO NOW</button>
+    </div>
+</div>
+
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/" } }</script>
+<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+    const AU_SCALE = 2000; 
+    const TEX_PATH = './textures/';
+    const J2000 = 946728000000; 
+    const isMobile = window.innerWidth < 768;
+    const MOON_VISUAL_SCALE = 40; 
+
+    // [Optimization] Vector Re-use
+    const _tempPos = new THREE.Vector3();
+    const _targetPos = new THREE.Vector3();
+    const _camOffset = new THREE.Vector3();
+
+    const PLANETS_DATA = [
+        { name: 'SUN', type: 'STAR', radius: 300, color: 0xffaa00, tilt: 7.25, rotPeriod: 600, realR: '696k km', day:'~27d', year:'-' },
+        { name: 'Mercury', type: 'PLANET', radius: 10, color: 0xaaaaaa, tilt: 0.03, period: 88, rotPeriod: 1407, realR: '2,439 km', day:'58.6d', year:'88d' },
+        { name: 'Venus', type: 'PLANET', radius: 26, color: 0xffcc00, tilt: 177.3, period: 225, rotPeriod: -5832, realR: '6,051 km', day:'243d', year:'225d' },
+        { name: 'Earth', type: 'PLANET', radius: 28, color: 0x2233ff, tilt: 23.44, period: 365.25, rotPeriod: 23.9, realR: '6,371 km', day:'23.9h', year:'365d' },
+        { name: 'Moon', type: 'MOON', radius: 8, color: 0xdddddd, tilt: 6.68, period: 27.3, rotPeriod: 655, realR: '1,737 km', day:'27.3d', year:'27.3d' },
+        { name: 'Mars', type: 'PLANET', radius: 16, color: 0xff4422, tilt: 25.19, period: 687, rotPeriod: 24.6, realR: '3,389 km', day:'24.6h', year:'687d' },
+        { name: 'Jupiter', type: 'GAS GIANT', radius: 90, color: 0xdcafa0, tilt: 3.13, period: 4333, rotPeriod: 9.9, realR: '69,911 km', day:'9.9h', year:'11.9y' },
+        { name: 'Saturn', type: 'GAS GIANT', radius: 75, color: 0xeaddcf, ring: true, tilt: 26.73, period: 10759, rotPeriod: 10.7, realR: '58,232 km', day:'10.7h', year:'29.5y' },
+        { name: 'Uranus', type: 'ICE GIANT', radius: 40, color: 0x00ffff, tilt: 97.77, period: 30687, rotPeriod: -17.2, realR: '25,362 km', day:'17.2h', year:'84y' },
+        { name: 'Neptune', type: 'ICE GIANT', radius: 38, color: 0x3333ff, tilt: 28.32, period: 60190, rotPeriod: 16.1, realR: '24,622 km', day:'16.1h', year:'165y' },
+        { name: 'Pluto', type: 'DWARF', radius: 6, color: 0xccaa88, tilt: 122.5, period: 90560, rotPeriod: -153, realR: '1,188 km', day:'6.4d', year:'248y' }
+    ];
+
+    const ASTEROIDS_DATA = [
+        { name: 'Ceres', type: 'DWARF', radius: 5, color:0x888888, realR: '473 km', rot:9.1, p:1682, a:2.767, e:0.076, i:10.59, O:80.3, w:73.5, M:77.3 },
+        { name: 'Pallas', type: 'ASTEROID', radius: 4, color:0x7788aa, realR: '256 km', rot:7.8, p:1686, a:2.772, e:0.231, i:34.84, O:173.0, w:310.0, M:59.8 },
+        { name: 'Vesta', type: 'ASTEROID', radius: 4, color:0xaa9988, realR: '262 km', rot:5.3, p:1325, a:2.361, e:0.088, i:7.14, O:103.8, w:150.2, M:20.8 },
+        { name: 'Hygiea', type: 'ASTEROID', radius: 3, color:0x444444, realR: '217 km', rot:27.6, p:2030, a:3.139, e:0.117, i:3.84, O:283.2, w:312.4, M:158.4 },
+        { name: 'Juno', type: 'ASTEROID', radius: 2.5, color:0x999999, realR: '127 km', rot:7.2, p:1592, a:2.671, e:0.255, i:12.9, O:169.8, w:248.1, M:43.1 },
+        { name: 'Psyche', type: 'METAL', radius: 2.5, color:0xaaaaff, realR: '113 km', rot:4.2, p:1821, a:2.924, e:0.137, i:3.10, O:150.0, w:228.4, M:110.1 },
+        { name: 'Haumea', type: 'DWARF', radius: 5, color:0xeeeeee, realR: '816 km', rot:3.9, p:104000, a:43.21, e:0.191, i:28.19, O:121.9, w:240.2, M:215.8 },
+        { name: 'Makemake', type: 'DWARF', radius: 5, color:0xffddaa, realR: '715 km', rot:22.8, p:112000, a:45.56, e:0.158, i:29.00, O:79.4, w:295.6, M:165.7 },
+        { name: 'Eris', type: 'DWARF', radius: 5, color:0xffffff, realR: '1,163 km', rot:25.9, p:203600, a:67.78, e:0.440, i:44.04, O:35.8, w:151.0, M:204.6 }
+    ];
+
+    let ALL_BODIES = [...PLANETS_DATA];
+    ASTEROIDS_DATA.forEach(a => {
+        a.rotPeriod = a.rot; a.period = a.p;
+        a.year = (a.p/365.25).toFixed(1) + 'y'; a.day = a.rot + 'h';
+        ALL_BODIES.push(a);
+    });
+
+    const CONSTELLATIONS_INFO = [
+        { name: "큰곰자리 (Ursa Major)", desc: "북두칠성을 포함하며 북극성을 찾는 길잡이.", lines: [[[11.06, 61.75], [11.89, 53.69]], [[11.89, 53.69], [12.25, 57.03]], [[12.25, 57.03], [12.90, 55.95]], [[12.90, 55.95], [13.39, 54.92]], [[13.39, 54.92], [13.79, 49.31]]] },
+        { name: "카시오페이아자리 (Cassiopeia)", desc: "W자 모양. 북극성 반대편에 위치.", lines: [[[0.15, 59.14], [0.67, 56.53]], [[0.67, 56.53], [0.94, 60.71]], [[0.94, 60.71], [1.42, 60.23]], [[1.42, 60.23], [1.90, 63.67]]] },
+        { name: "전갈자리 (Scorpius)", desc: "여름철 남쪽 하늘의 거대한 S자.", lines: [[[16.48, -26.43], [16.35, -26.31]], [[16.35, -26.31], [16.08, -22.62]], [[16.48, -26.43], [16.51, -28.21]], [[16.51, -28.21], [16.58, -34.29]]] },
+        { name: "사자자리 (Leo)", desc: "봄철 대표 별자리. 낫 모양이 특징.", lines: [[[10.13, 11.96], [10.33, 19.84]], [[10.33, 19.84], [11.23, 20.52]], [[11.23, 20.52], [11.81, 14.57]], [[11.81, 14.57], [11.23, 15.43]], [[11.23, 15.43], [10.13, 11.96]]] },
+        { name: "처녀자리 (Virgo)", desc: "황도 12궁. 스피카가 빛나는 봄철 별자리.", lines: [[[13.41, -11.16], [13.03, -0.66]], [[13.03, -0.66], [12.92, 3.39]], [[12.92, 3.39], [12.69, -1.45]], [[12.69, -1.45], [13.41, -11.16]]] },
+        { name: "목동자리 (Boötes)", desc: "연 모양. 아크투루스가 있는 봄철 별자리.", lines: [[[14.26, 19.18], [14.53, 30.37]], [[14.53, 30.37], [14.74, 27.07]], [[14.74, 27.07], [14.26, 19.18]], [[14.26, 19.18], [13.91, 18.39]]] },
+        { name: "왕관자리 (Corona Borealis)", desc: "반원형 왕관 모양의 작은 별자리.", lines: [[[15.58, 26.71], [15.71, 26.29]], [[15.71, 26.29], [15.96, 26.88]], [[15.96, 26.88], [16.14, 33.80]], [[16.14, 33.80], [16.23, 29.85]]] },
+        { name: "게자리 (Cancer)", desc: "프레세페 성단이 있는 황도 별자리.", lines: [[[8.97, 11.85], [8.78, 18.15]], [[8.78, 18.15], [8.72, 21.46]], [[8.72, 21.46], [8.97, 11.85]]] },
+        { name: "백조자리 (Cygnus)", desc: "은하수를 가로지르는 십자가 모양.", lines: [[[20.69, 45.28], [19.74, 33.97]], [[19.74, 33.97], [19.51, 27.96]], [[19.74, 33.97], [21.23, 30.22]], [[19.74, 33.97], [19.93, 35.08]]] },
+        { name: "거문고자리 (Lyra)", desc: "직녀성(베가)이 있는 작은 별자리.", lines: [[[18.61, 38.78], [18.98, 32.68]], [[18.98, 32.68], [18.90, 36.89]], [[18.90, 36.89], [18.74, 37.60]], [[18.74, 37.60], [18.61, 38.78]]] },
+        { name: "독수리자리 (Aquila)", desc: "견우성(알타이르)이 있는 여름 별자리.", lines: [[[19.84, 8.86], [19.09, 13.86]], [[19.09, 13.86], [19.77, 10.61]], [[19.77, 10.61], [19.84, 8.86]], [[19.84, 8.86], [19.92, 6.40]]] },
+        { name: "궁수자리 (Sagittarius)", desc: "은하수 중심부. 찻주전자 모양.", lines: [[[19.39, -21.02], [19.09, -29.88]], [[19.09, -29.88], [18.92, -26.29]], [[18.92, -26.29], [18.46, -34.38]], [[18.46, -34.38], [19.16, -40.61]]] },
+        { name: "헤라클레스자리 (Hercules)", desc: "여름철 천정 근처의 대형 별자리.", lines: [[[17.24, 14.39], [17.00, 30.92]], [[17.00, 30.92], [16.71, 38.92]], [[16.71, 38.92], [17.93, 29.24]], [[17.93, 29.24], [17.24, 14.39]]] },
+        { name: "페가수스자리 (Pegasus)", desc: "가을철 거대한 사각형 모양.", lines: [[[23.07, 15.2], [0.13, 15.1]], [[0.13, 15.1], [0.13, 29.0]], [[0.13, 29.0], [23.06, 28.0]], [[23.06, 28.0], [23.07, 15.2]]] },
+        { name: "안드로메다자리 (Andromeda)", desc: "M31 은하가 위치한 가을철 별자리.", lines: [[[0.14, 29.09], [0.66, 30.86]], [[0.66, 30.86], [0.94, 38.49]], [[0.94, 38.49], [1.16, 35.62]], [[1.16, 35.62], [2.06, 42.32]]] },
+        { name: "페르세우스자리 (Perseus)", desc: "유성우의 방사점. 은하수를 가로지름.", lines: [[[3.40, 49.86], [3.13, 53.50]], [[3.13, 53.50], [3.09, 44.85]], [[3.09, 44.85], [3.08, 40.95]], [[3.08, 40.95], [3.40, 49.86]]] },
+        { name: "물고기자리 (Pisces)", desc: "황도 12궁. 춘분점이 위치함.", lines: [[[1.75, 15.34], [1.31, 7.58]], [[1.31, 7.58], [0.81, 7.88]], [[0.81, 7.88], [23.66, 6.37]], [[23.66, 6.37], [23.98, 1.78]]] },
+        { name: "양자리 (Aries)", desc: "작지만 밝은 하말이 있는 황도 별자리.", lines: [[[2.11, 23.46], [2.03, 19.29]], [[2.03, 19.29], [1.91, 20.80]], [[1.91, 20.80], [2.11, 23.46]]] },
+        { name: "천칭자리 (Libra)", desc: "저울 모양의 가을철 황도 별자리.", lines: [[[15.28, -9.38], [15.59, -14.78]], [[15.59, -14.78], [14.84, -16.04]], [[14.84, -16.04], [15.28, -9.38]]] },
+        { name: "염소자리 (Capricornus)", desc: "바다염소 모양의 황도 별자리.", lines: [[[21.78, -16.13], [21.37, -16.83]], [[21.37, -16.83], [20.86, -26.91]], [[20.86, -26.91], [20.29, -12.75]]] },
+        { name: "물병자리 (Aquarius)", desc: "유성우 방사점이 많은 가을철 별자리.", lines: [[[22.09, -0.32], [22.36, -1.38]], [[22.36, -1.38], [22.64, -15.82]], [[22.64, -15.82], [22.88, -7.57]]] },
+        { name: "오리온자리 (Orion)", desc: "겨울 밤하늘의 제왕. 삼태성이 특징.", lines: [[[5.91, 7.40], [5.60, 7.40]], [[5.60, 7.40], [5.24, -2.38]], [[5.91, 7.40], [5.80, -9.66]], [[5.80, -9.66], [5.24, -2.38]], [[5.53, -1.94], [5.60, -1.20]], [[5.60, -1.20], [5.67, -0.29]]] },
+        { name: "황소자리 (Taurus)", desc: "V자 모양과 플레이아데스 성단.", lines: [[[4.6, 16.5], [4.3, 15.5]], [[4.3, 15.5], [4.0, 16.0]], [[4.6, 16.5], [5.0, 20.0]], [[5.0, 20.0], [5.4, 21.1]]] },
+        { name: "쌍둥이자리 (Gemini)", desc: "카스토르와 폴룩스 두 밝은 별.", lines: [[[7.57, 31.8], [7.75, 28.0]], [[7.75, 28.0], [7.2, 22.0]], [[7.2, 22.0], [6.2, 22.5]]] },
+        { name: "큰개자리 (Canis Major)", desc: "가장 밝은 별 시리우스가 있는 곳.", lines: [[[6.75, -16.7], [6.9, -20.0]], [[6.9, -20.0], [7.0, -26.0]], [[6.75, -16.7], [6.3, -18.0]]] },
+        { name: "마차부자리 (Auriga)", desc: "오각형 모양. 카펠라가 빛남.", lines: [[[5.27, 45.99], [5.99, 44.94]], [[5.99, 44.94], [5.43, 41.07]], [[5.43, 41.07], [4.95, 33.16]], [[4.95, 33.16], [5.27, 45.99]]] },
+        { name: "작은개자리 (Canis Minor)", desc: "프로키온이 있는 작은 별자리.", lines: [[[7.65, 5.22], [7.45, 8.28]], [[7.45, 8.28], [7.65, 5.22]]] },
+        { name: "에리다누스자리 (Eridanus)", desc: "강 모양으로 흐르는 별자리.", lines: [[[5.13, -5.08], [4.90, -3.25]], [[4.90, -3.25], [4.59, -3.35]], [[4.59, -3.35], [4.29, -7.65]], [[4.29, -7.65], [3.96, -13.50]]] },
+        { name: "토끼자리 (Lepus)", desc: "오리온 아래 위치한 토끼 모양.", lines: [[[5.54, -20.75], [5.47, -22.37]], [[5.47, -22.37], [5.21, -16.20]], [[5.21, -16.20], [5.54, -20.75]]] },
+        { name: "남십자자리 (Crux)", desc: "남반구를 대표하는 십자가 모양.", lines: [[[12.44, -63.09], [12.79, -59.68]], [[12.51, -57.11], [12.26, -58.74]]] },
+        { name: "센타우루스자리 (Centaurus)", desc: "가장 가까운 별 알파 센타우리가 위치.", lines: [[[14.66, -60.83], [14.11, -36.36]], [[14.11, -36.36], [13.92, -47.28]], [[13.92, -47.28], [12.69, -48.95]]] },
+        { name: "용골자리 (Carina)", desc: "카노푸스가 있는 남반구 별자리.", lines: [[[6.39, -52.69], [8.37, -59.50]], [[8.37, -59.50], [9.22, -59.27]], [[9.22, -59.27], [10.71, -64.39]]] }
+    ];
+
+    const TEXTURE_FILES = {
+        'Sun': '2k_sun.jpg', 'Mercury': '2k_mercury.jpg', 'Venus': '2k_venus_surface.jpg',
+        'Earth': 'earth_atmos_2048.jpg', 'Earth_Night': 'earth_lights_2048.png', 'Earth_Cloud': 'earth_clouds_1024.png',
+        'Moon': '2k_moon.jpg', 'Mars': '2k_mars.jpg', 'Jupiter': '2k_jupiter.jpg',
+        'Saturn': '2k_saturn.jpg', 'Saturn_Ring': '2k_saturn_ring_alpha.png',
+        'Uranus': '2k_uranus.jpg', 'Neptune': '2k_neptune.jpg', 'Pluto': 'plutomap2k.jpg',
+        'Ceres': '4k_ceres_fictional.jpg', 'Vesta': '2k_vesta.jpg', 'Eris': '4k_eris_fictional.jpg',
+        'Haumea': '4k_haumea_fictional.jpg', 'Makemake': '4k_makemake_fictional.jpg',
+        'Stars': '8k_stars_milky_way.jpg'
+    };
+
+    let scene, camera, renderer, labelRenderer, controls, composer;
+    let systemGroup, bodiesMesh = {}, orbitLines = [], constLines = [], constLabels = [], constStars = [];
+    let backgroundMesh;
+    let targetIndex = 3; 
+    let simulationDate = new Date();
+    let timeSpeed = 1;
+    let clock = new THREE.Clock();
+    let textureLoader;
+    let isCameraLocked = false; 
+
+    init();
+
+    function init() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 5000000);
+        camera.position.set(0, 100, 400);
+
+        renderer = new THREE.WebGLRenderer({ antialias: false, logarithmicDepthBuffer: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(1); 
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.domElement.style.position = 'absolute';
+        labelRenderer.domElement.style.top = '0px';
+        labelRenderer.domElement.style.pointerEvents = 'none'; 
+        document.getElementById('canvas-container').appendChild(labelRenderer.domElement);
+
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 20;
+        controls.maxDistance = 2000000;
+
+        const renderPass = new RenderPass(scene, camera);
+        
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth/2, window.innerHeight/2), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.2; 
+        bloomPass.strength = isMobile ? 0.4 : 0.8;
+        bloomPass.radius = 0.5;
+        composer = new EffectComposer(renderer);
+        composer.addPass(renderPass);
+        composer.addPass(bloomPass);
+
+        const sunLight = new THREE.PointLight(0xffffff, 3.0, 0, 0); 
+        scene.add(sunLight);
+        scene.add(new THREE.AmbientLight(0x050505));
+
+        const loadingManager = new THREE.LoadingManager();
+        loadingManager.onLoad = () => {
+            const loaderEl = document.getElementById('loader');
+            loaderEl.style.opacity = 0;
+            setTimeout(() => loaderEl.style.display = 'none', 800);
+        };
+        textureLoader = new THREE.TextureLoader(loadingManager);
+
+        // [Improvement] 배경 이미지를 흐리게 하여 은하수 느낌만 주고, 회전 가능하게 변경
+        if(TEXTURE_FILES.Stars) {
+            textureLoader.load(TEX_PATH+TEXTURE_FILES.Stars, (tex) => {
+                 const stGeo = new THREE.SphereGeometry(900000, 32, 32);
+                 // 배경을 약간 어둡게(transparent, opacity 0.5) 처리하여 별자리 점이 돋보이게 함
+                 const stMat = new THREE.MeshBasicMaterial({ 
+                     map: tex, 
+                     side: THREE.BackSide, 
+                     transparent: true, 
+                     opacity: 0.4,  // 배경 디밍
+                     depthWrite: false
+                 });
+                 backgroundMesh = new THREE.Mesh(stGeo, stMat);
+                 scene.add(backgroundMesh);
+            });
+        }
+
+        createSystem();
+        initConstellations();
+        
+        updateBodyPositions(simulationDate);
+        updateUI();
+
+        window.addEventListener('resize', onResize);
+        window.addEventListener('click', hideTooltip);
+        window.addEventListener('keydown', e => { if(e.key==='Tab'){ e.preventDefault(); changeTarget(1); } });
+        
+        setupControls();
+        animate();
+    }
+
+    function createSystem() {
+        systemGroup = new THREE.Group();
+        scene.add(systemGroup);
+
+        ALL_BODIES.forEach(b => {
+            const group = new THREE.Group();
+            if(b.name === 'Moon') {
+                if(bodiesMesh['Earth']) bodiesMesh['Earth'].group.add(group);
+            } else {
+                systemGroup.add(group);
+            }
+
+            const tiltGroup = new THREE.Group();
+            if(b.tilt) tiltGroup.rotation.z = THREE.MathUtils.degToRad(b.tilt);
+            group.add(tiltGroup);
+
+            let mesh;
+            let texName = TEXTURE_FILES[b.name];
+            let mat;
+            const seg = 48; 
+
+            if(b.name==='SUN') {
+                const tex = texName?textureLoader.load(TEX_PATH+texName):null;
+                mat = new THREE.MeshBasicMaterial({map:tex, color:tex?0xffffff:b.color});
+                mesh = new THREE.Mesh(new THREE.SphereGeometry(b.radius, seg, seg), mat);
+            } else if(b.name==='Earth') {
+                const day = textureLoader.load(TEX_PATH+TEXTURE_FILES.Earth);
+                const night = textureLoader.load(TEX_PATH+TEXTURE_FILES.Earth_Night);
+                const cloud = textureLoader.load(TEX_PATH+TEXTURE_FILES.Earth_Cloud);
+                mat = new THREE.MeshPhongMaterial({ map:day, emissiveMap:night, emissiveIntensity:0.6, specular: new THREE.Color(0x333333), shininess:10 });
+                mesh = new THREE.Mesh(new THREE.SphereGeometry(b.radius, seg, seg), mat);
+                const cMesh = new THREE.Mesh(new THREE.SphereGeometry(b.radius*1.01, seg, seg), new THREE.MeshPhongMaterial({map:cloud, transparent:true, opacity:0.8, blending:THREE.AdditiveBlending}));
+                mesh.add(cMesh);
+                createMoonOrbitLine(group); 
+            } else {
+                const props = { color: b.color, roughness: 0.8, metalness: 0.2 };
+                if(texName) {
+                    textureLoader.load(TEX_PATH+texName, 
+                        (tex) => { mesh.material.map = tex; mesh.material.needsUpdate = true; },
+                        undefined, (err) => { }
+                    );
+                }
+                mat = new THREE.MeshStandardMaterial(props);
+                mesh = new THREE.Mesh(new THREE.SphereGeometry(b.radius, seg, seg), mat);
+            }
+            tiltGroup.add(mesh);
+
+            if(b.ring && TEXTURE_FILES.Saturn_Ring) {
+                const rngGeo = new THREE.RingGeometry(b.radius*1.2, b.radius*2.2, 128);
+                const rngMat = new THREE.MeshStandardMaterial({ 
+                    map:textureLoader.load(TEX_PATH+TEXTURE_FILES.Saturn_Ring), 
+                    side:THREE.DoubleSide, transparent:true, opacity:0.9,
+                    color: 0xffffff
+                });
+                const ring = new THREE.Mesh(rngGeo, rngMat);
+                ring.rotation.x = Math.PI/2;
+                mesh.add(ring);
+            }
+
+            if(b.name !== 'SUN') createOrbitLine(b);
+
+            const div = document.createElement('div');
+            div.className = 'label-obj';
+            div.textContent = b.name;
+            const label = new CSS2DObject(div);
+            label.position.set(0, b.radius*1.3, 0);
+            mesh.add(label);
+
+            bodiesMesh[b.name] = { group, mesh, data: b };
+        });
+    }
+
+    function createMoonOrbitLine(parentGroup) {
+        const pts = [];
+        const segments = 120; 
+        const now = new Date();
+        for(let i=0; i<=segments; i++) {
+            const t = now.getTime() + (27.32 * 86400000 / segments) * i;
+            const d = new Date(t);
+            const v = Astronomy.GeoVector('Moon', d, true);
+            const dist = Math.sqrt(v.x**2 + v.y**2 + v.z**2);
+            const scale = (dist * AU_SCALE / dist) * MOON_VISUAL_SCALE; 
+            pts.push(new THREE.Vector3(v.x * AU_SCALE * MOON_VISUAL_SCALE, v.z * AU_SCALE * MOON_VISUAL_SCALE * 0.5, v.y * AU_SCALE * MOON_VISUAL_SCALE));
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0.2 });
+        const line = new THREE.LineLoop(geo, mat);
+        
+        line.userData = { type: 'PLANET' }; 
+        orbitLines.push(line);
+        
+        parentGroup.add(line); 
+    }
+
+    function createOrbitLine(b) {
+        const pts = [];
+        const seg = 120; 
+        const now = new Date();
+        if(b.a) { 
+            for(let i=0; i<=seg; i++) {
+                const simDate = new Date(now.getTime() + (b.p/seg * i * 86400000));
+                pts.push(getKeplerPos(b, simDate));
+            }
+        } else if(b.period) { 
+            for(let i=0; i<=seg; i++) {
+                const simDate = new Date(now.getTime() + (b.period/seg * i * 86400000));
+                if(b.name==='Moon') continue;
+                const v = Astronomy.HelioVector(b.name, simDate);
+                pts.push(new THREE.Vector3(v.x*AU_SCALE, v.z*AU_SCALE*0.5, v.y*AU_SCALE));
+            }
+        }
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        const mat = new THREE.LineBasicMaterial({ color: b.color, transparent:true, opacity:0.25 });
+        const line = new THREE.LineLoop(geo, mat);
+        const isAst = (b.type==='ASTEROID' || (b.type==='DWARF' && b.name!=='Pluto'));
+        line.userData = { type: isAst ? 'ASTEROID' : 'PLANET' };
+        if(isAst) line.visible = false; 
+        systemGroup.add(line);
+        orbitLines.push(line);
+    }
+
+    function createStarSprite() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 32; canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(16,16,0,16,16,16);
+        grad.addColorStop(0, 'rgba(255,255,255,1)');
+        grad.addColorStop(0.2, 'rgba(200,240,255,0.8)');
+        grad.addColorStop(0.5, 'rgba(64,100,255,0.2)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0,0,32,32);
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    function initConstellations() {
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x55ccff, transparent: true, opacity: 0.35, linewidth: 1 });
+        const starMat = new THREE.PointsMaterial({ 
+            map: createStarSprite(), 
+            size: 8000, 
+            sizeAttenuation: true, 
+            transparent: true, 
+            opacity: 0.9, 
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const r = 800000;
+        
+        CONSTELLATIONS_INFO.forEach(constData => {
+            const linePoints = [];
+            const starVertices = []; 
+            let sumX=0, sumY=0, sumZ=0, count=0;
+            
+            constData.lines.forEach(lineSegment => {
+                lineSegment.forEach(coord => {
+                    const ra = (coord[0] * 15) * Math.PI/180;
+                    const dec = coord[1] * Math.PI/180;
+                    const x = r * Math.cos(dec) * Math.cos(ra);
+                    const y = r * Math.sin(dec);
+                    const z = r * Math.cos(dec) * Math.sin(ra); 
+                    
+                    const vec = new THREE.Vector3(x, y, -z);
+                    linePoints.push(vec);
+                    starVertices.push(x, y, -z); 
+                    
+                    sumX += x; sumY += y; sumZ += -z; count++;
+                });
+            });
+
+            const geo = new THREE.BufferGeometry().setFromPoints(linePoints);
+            const line = new THREE.Line(geo, lineMat);
+            scene.add(line);
+            constLines.push(line);
+
+            const starGeo = new THREE.BufferGeometry();
+            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            const starPoints = new THREE.Points(starGeo, starMat);
+            scene.add(starPoints);
+            constStars.push(starPoints);
+
+            if(count > 0) {
+                const div = document.createElement('div');
+                div.className = 'label-const';
+                div.textContent = constData.name;
+                div.onclick = (e) => { showConstTooltip(constData, e); e.stopPropagation(); };
+                const labelObj = new CSS2DObject(div);
+                labelObj.position.set(sumX/count, sumY/count, sumZ/count);
+                scene.add(labelObj);
+                constLabels.push(labelObj);
+            }
+        });
+
+        createPolaris();
+    }
+
+    function createPolaris() {
+        const tiltRad = THREE.MathUtils.degToRad(23.44);
+        const R = 800000;
+        const px = -Math.sin(tiltRad) * R;
+        const py = Math.cos(tiltRad) * R;
+        const pz = 0;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createRadialGradient(32,32,0,32,32,32);
+        grad.addColorStop(0, 'white');
+        grad.addColorStop(0.4, 'rgba(200,240,255,0.8)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad; ctx.fillRect(0,0,64,64);
+        
+        const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(canvas), color: 0xffffff, blending: THREE.AdditiveBlending });
+        const sprite = new THREE.Sprite(mat);
+        sprite.position.set(px, py, pz);
+        sprite.scale.set(8000, 8000, 1);
+        scene.add(sprite);
+
+        const div = document.createElement('div');
+        div.className = 'label-polaris';
+        div.innerHTML = '북극성<br>(Polaris)';
+        const label = new CSS2DObject(div);
+        label.position.set(px, py - 5000, pz);
+        scene.add(label);
+        constLabels.push(label); 
+    }
+
+    function showConstTooltip(data, e) {
+        const tooltip = document.getElementById('constellation-tooltip');
+        document.getElementById('const-name').innerText = data.name;
+        document.getElementById('const-desc').innerText = data.desc;
+        tooltip.style.display = 'block';
+        tooltip.style.left = e.clientX + 'px';
+        tooltip.style.top = e.clientY + 'px';
+    }
+
+    function hideTooltip() { document.getElementById('constellation-tooltip').style.display = 'none'; }
+
+    function updateBodyPositions(date) {
+        const gmst = Astronomy.SiderealTime(date);
+        ALL_BODIES.forEach(b => {
+            if(b.name === 'SUN') return;
+            
+            if (b.name === 'Moon') { 
+                 const v = Astronomy.GeoVector('Moon', date, true);
+                 _tempPos.set(v.x, v.z*0.5, v.y).multiplyScalar(AU_SCALE * MOON_VISUAL_SCALE);
+            } else if(b.a) { 
+                _tempPos.copy(getKeplerPos(b, date));
+            } else { 
+                 const v = Astronomy.HelioVector(b.name, date);
+                 _tempPos.set(v.x*AU_SCALE, v.z*AU_SCALE*0.5, v.y*AU_SCALE);
+            }
+
+            if(bodiesMesh[b.name]) {
+                bodiesMesh[b.name].group.position.copy(_tempPos);
+                
+                if(b.name === 'Earth') {
+                    const rotY = (gmst / 24) * Math.PI * 2 + Math.PI; 
+                    bodiesMesh[b.name].mesh.rotation.y = rotY;
+                } else if(b.rotPeriod) {
+                    const rot = (date.getTime()/3600000) / b.rotPeriod * Math.PI * 2;
+                    bodiesMesh[b.name].mesh.rotation.y = rot;
+                }
+            }
+        });
+    }
+    
+    function solveKepler(M, ecc) {
+        M = M % (Math.PI * 2);
+        if (M < 0) M += Math.PI * 2;
+        if (ecc === 0) return M;
+        let E = (ecc > 0.8) ? Math.PI : M; 
+        let delta = 1;
+        let i = 0;
+        while (Math.abs(delta) > 1e-12 && i < 50) {
+            delta = (E - ecc * Math.sin(E) - M) / (1 - ecc * Math.cos(E));
+            E -= delta;
+            i++;
+        }
+        return E;
+    }
+
+    function getKeplerPos(body, date) {
+        const daysSinceEpoch = (date.getTime() - J2000) / 86400000;
+        const n = 360 / body.p; 
+        let M_deg = (body.M + n * daysSinceEpoch) % 360;
+        if(M_deg < 0) M_deg += 360;
+
+        const M = THREE.MathUtils.degToRad(M_deg);
+        const E = solveKepler(M, body.e);
+        const P = body.a * (Math.cos(E) - body.e);
+        const Q = body.a * Math.sqrt(1 - body.e**2) * Math.sin(E);
+        const w = THREE.MathUtils.degToRad(body.w);
+        const O = THREE.MathUtils.degToRad(body.O);
+        const i = THREE.MathUtils.degToRad(body.i);
+        const cosO = Math.cos(O), sinO = Math.sin(O);
+        const cosw = Math.cos(w), sinw = Math.sin(w);
+        const cosi = Math.cos(i), sini = Math.sin(i);
+        const x = P*(Math.cos(O)*Math.cos(w)-Math.sin(O)*Math.sin(w)*Math.cos(i)) - Q*(Math.cos(O)*Math.sin(w)+Math.sin(O)*Math.cos(w)*Math.cos(i));
+        const y = P*(Math.sin(O)*Math.cos(w)+Math.cos(O)*Math.sin(w)*Math.cos(i)) - Q*(Math.sin(O)*Math.sin(w)-Math.cos(O)*Math.cos(w)*Math.cos(i));
+        const z = P*Math.sin(w)*Math.sin(i) + Q*Math.cos(w)*Math.sin(i);
+        return new THREE.Vector3(x*AU_SCALE, z*AU_SCALE*0.5, y*AU_SCALE);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        simulationDate = new Date(simulationDate.getTime() + (delta * 1000 * timeSpeed));
+        document.getElementById('sim-date').innerText = simulationDate.toISOString().split('T')[0];
+        document.getElementById('sim-time').innerText = simulationDate.toTimeString().split(' ')[0];
+
+        updateBodyPositions(simulationDate);
+        
+        const targetBody = bodiesMesh[ALL_BODIES[targetIndex].name];
+        if(targetBody) {
+            targetBody.group.getWorldPosition(_targetPos);
+            
+            if(isCameraLocked) {
+                _camOffset.subVectors(camera.position, controls.target);
+                controls.target.copy(_targetPos);
+                camera.position.copy(_targetPos).add(_camOffset);
+            }
+            const dist = _targetPos.length() / AU_SCALE;
+            document.getElementById('spec-dist').innerText = dist.toFixed(3);
+        }
+
+        controls.update();
+        composer.render();
+        labelRenderer.render(scene, camera);
+    }
+
+    function setupControls() {
+        document.getElementById('btn-next').onclick = () => changeTarget(1);
+        document.getElementById('btn-prev').onclick = () => changeTarget(-1);
+        
+        const slider = document.getElementById('speed-slider');
+        const input = document.getElementById('speed-input');
+        slider.oninput = (e) => { timeSpeed = parseInt(e.target.value); input.value = timeSpeed; };
+        input.onchange = (e) => {
+            let val = parseInt(e.target.value);
+            if(isNaN(val)) val = 1;
+            timeSpeed = val; slider.value = Math.min(val, 500000); 
+        };
+        
+        document.getElementById('chk-orbits').onchange = (e) => toggleOrbits('PLANET', e.target.checked);
+        document.getElementById('chk-ast-orbits').onchange = (e) => toggleOrbits('ASTEROID', e.target.checked);
+        document.getElementById('chk-const').onchange = (e) => { 
+            constLines.forEach(l => l.visible = e.target.checked); 
+            constLabels.forEach(l => l.visible = e.target.checked);
+            constStars.forEach(s => s.visible = e.target.checked);
+        };
+        document.getElementById('chk-lock').onchange = (e) => { isCameraLocked = e.target.checked; };
+        document.getElementById('btn-reset').onclick = () => { simulationDate = new Date(); timeSpeed=1; slider.value=1; input.value=1; };
+        document.getElementById('date-picker').onchange = (e) => { if(e.target.value) simulationDate = new Date(e.target.value); };
+
+        
+        // [New] 배경 회전 이벤트 리스너 (X, Y축 모두 제어)
+        const skySliderY = document.getElementById('sky-slider-y');
+        const skySliderX = document.getElementById('sky-slider-x');
+        
+        const updateSky = () => {
+             if(backgroundMesh) {
+                 const degY = parseInt(skySliderY.value);
+                 const degX = parseInt(skySliderX.value);
+                 // Y축 회전 후 X축 기울기 적용
+                 backgroundMesh.rotation.order = 'YXZ'; 
+                 backgroundMesh.rotation.y = THREE.MathUtils.degToRad(degY);
+                 backgroundMesh.rotation.x = THREE.MathUtils.degToRad(degX);
+             }
+        };
+
+        skySliderY.oninput = updateSky;
+        skySliderX.oninput = updateSky;
+        
+
+        const btnSettings = document.getElementById('btn-settings-toggle');
+        const panel = document.getElementById('controls-panel');
+        
+        if(isMobile) panel.classList.add('hidden');
+
+        btnSettings.onclick = () => {
+            panel.classList.toggle('hidden');
+            btnSettings.classList.toggle('active');
+        };
+    }
+
+    function changeTarget(dir) {
+        targetIndex = (targetIndex + dir + ALL_BODIES.length) % ALL_BODIES.length;
+        updateUI();
+    }
+
+    function updateUI() {
+        const b = ALL_BODIES[targetIndex];
+        document.getElementById('target-name').innerText = b.name.toUpperCase();
+        document.getElementById('target-type').innerText = b.type;
+        document.getElementById('spec-radius').innerText = b.realR;
+        document.getElementById('spec-day').innerText = b.day;
+        document.getElementById('spec-year').innerText = b.year;
+        
+        if(bodiesMesh[b.name]) {
+            bodiesMesh[b.name].group.getWorldPosition(_targetPos);
+            controls.target.copy(_targetPos);
+            if(camera.position.distanceTo(_targetPos) > b.radius * 1000) {
+                 camera.position.set(_targetPos.x + b.radius*4, _targetPos.y + b.radius*2, _targetPos.z + b.radius*4);
+            }
+        }
+    }
+
+    function toggleOrbits(type, val) {
+        orbitLines.forEach(l => { if(l.userData.type === type) l.visible = val; });
+    }
+
+    function onResize() {
+        camera.aspect = window.innerWidth/window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        composer.setSize(window.innerWidth, window.innerHeight);
+        composer.passes[1].resolution.set(window.innerWidth/2, window.innerHeight/2);
+    }
+</script>
+</body>
+</html>
