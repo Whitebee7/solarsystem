@@ -1,4 +1,3 @@
-```markdown
 # Solar System Ultimate v4.4 — Real Sky Alignment
 
 ![Solar System Logo](https://svgshare.com/i/11r9.svg)  
